@@ -96,6 +96,8 @@ gui
 const scene = new THREE.Scene()
 scene.background = new THREE.Color(guiObjects.colorBG)
 
+
+
 /**
  * Materials
  */
@@ -203,16 +205,32 @@ gltfloader.load(
     }
 )
 
-// gltfloader.load(
-//     'GLTF/pigeonSkeleton.glb',
-//     (gltf)=>
-//     {
-//         pigeonSkeleton =gltf.scene
-//         pigeonSkeleton.scale.multiplyScalar(0.6)
-//        pigeonSkeleton.rotation.set(-0.35, -0.45, -0.4)
-//         scene.add(pigeonSkeleton)
-//     }
-// )
+gltfloader.load(
+    'GLTF/pigeonSkeleton.glb',
+    (gltf)=>
+    {
+       pigeonSkeleton =gltf.scene
+       pigeonSkeleton.scale.multiplyScalar(0.6)
+       pigeonSkeleton.rotation.set(-0.35, -0.45, -0.4)
+       pigeonSkeleton.visible=false
+
+       // Change materials directly by name if they are named in the model
+       pigeonSkeleton.traverse(
+        (child) => {
+        if (child.isMesh) {
+            if (child.material.name === 'beak') {
+                child.material = beakMaterial; 
+            }
+        }
+    })
+       
+       scene.add(pigeonSkeleton)
+
+
+    }
+)
+
+
 
 
 
@@ -231,6 +249,11 @@ scene.add(ambientLight)
 const directLight = new THREE.DirectionalLight(0xffffff, 2)
 directLight.position.set(1, 4, 3)
 scene.add(directLight)
+
+/**
+ * Raycaster
+ */
+const raycaster = new THREE.Raycaster()
 
 
 
@@ -258,6 +281,22 @@ window.addEventListener('resize', () =>
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
         
     })
+
+
+/**
+ * Cursor
+ */
+
+const mouse= new THREE.Vector2()
+
+window.addEventListener('mousemove', (event)=>
+{
+    mouse.x= event.clientX/sizes.width*2 -1
+    mouse.y= -(event.clientY/sizes.height*2 -1)
+
+    
+})
+ 
 
 
 
@@ -292,7 +331,27 @@ const clock = new THREE.Clock()
 
 const tick = () =>
     {
-        
+       const elapsedTime= clock.getElapsedTime() 
+
+       //Raycaster
+       raycaster.setFromCamera(mouse,camera)
+
+       if (pigeonHead && pigeonSkeleton) {
+        // Check for intersections with the duck model
+        const intersects = raycaster.intersectObject(pigeonHead);
+    
+        if (intersects.length) {
+          // Show skeleton when hovering over the duck
+         pigeonHead.visible=false
+          pigeonSkeleton.visible = true;
+          // Optionally highlight parts of the skeleton based on intersects
+        } else {
+          // Hide skeleton if not hovering over the duck
+          pigeonSkeleton.visible = false;
+          pigeonHead.visible=true
+        }
+      }
+
     
         // Update controls
         controls.update()
