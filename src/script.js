@@ -38,14 +38,28 @@ scene.background = new THREE.Color(guiObjects.colorBG)
 
 const gltfloader= new GLTFLoader()
 
+let pigeonHead= null
+let pigeonSkeleton = null
+
 gltfloader.load(
     'GLTF/pigeonHead.glb',
     (gltf)=>
     {
-        gltf.scene.scale.set(0.8, 0.8, 0.8)
-        scene.add(gltf.scene)
+        pigeonHead= gltf.scene
+       pigeonHead.scale.set(0.8, 0.8, 0.8)
+        scene.add(pigeonHead)
     }
 )
+
+// gltfloader.load(
+//     'GLTF/pigeonSkeleton.glb',
+//     (gltf)=>
+//     {
+//         
+// gltf.scene.scale.set(0.8, 0.8, 0.8)
+//         scene.add(gltf.scene)
+//     }
+// )
 
 
 
