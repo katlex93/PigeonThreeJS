@@ -15,6 +15,14 @@ gui.close()
 
 const guiObjects= {}
 guiObjects.colorBG = 0xffd60a
+guiObjects.colorBody = 0xBFC5FF
+guiObjects.colorEyeLids = 0xBFC5FF
+guiObjects.colorBeak = 0xE7970D
+guiObjects.colorBeakSkin = 0xFF3A26
+guiObjects.colorEyesX = 0x000000
+guiObjects.colorHat1 = 0x5D65FF
+guiObjects.colorHat2 = 0xFF3A26
+
 gui
     .addColor(guiObjects, 'colorBG')
     .onChange(() => {
@@ -24,12 +32,116 @@ gui
     .name('BG')
 
 
+    gui
+    .addColor(guiObjects, 'colorBody')
+    .onChange(() => {
+        
+        bodyMaterial.color.set(guiObjects.colorBody);
+    })
+    .name('Body')
+
+    gui
+    .addColor(guiObjects, 'colorEyeLids')
+    .onChange(() => {
+        
+        eyelidsMaterial.color.set(guiObjects.colorEyeLids);
+    })
+    .name('EyeLids')
+
+    gui
+    .addColor(guiObjects, 'colorBeak')
+    .onChange(() => {
+        
+        beakMaterial.color.set(guiObjects.colorBeak);
+    })
+    .name('Beak')
+
+    gui
+    .addColor(guiObjects, 'colorBeakSkin')
+    .onChange(() => {
+        
+        beakSkinMaterial.color.set(guiObjects.colorBeakSkin);
+    })
+    .name('Beak Skin')
+
+    gui
+    .addColor(guiObjects, 'colorEyesX')
+    .onChange(() => {
+        
+        eyesXMaterial.color.set(guiObjects.colorEyesX);
+    })
+    .name("Eye's X")
+
+    gui
+    .addColor(guiObjects, 'colorHat1')
+    .onChange(() => {
+        
+        hat1Material.color.set(guiObjects.colorHat1);
+    })
+    .name("Hat 1")
+
+    gui
+    .addColor(guiObjects, 'colorHat2')
+    .onChange(() => {
+        
+        hat2Material.color.set(guiObjects.colorHat2);
+    })
+    .name("Hat 2")
+
+
 
 
 
 // Scene
 const scene = new THREE.Scene()
 scene.background = new THREE.Color(guiObjects.colorBG)
+
+/**
+ * Materials
+ */
+
+//Bird's Body
+const bodyMaterial= new THREE.MeshStandardMaterial({
+    color: guiObjects.colorBody,
+    roughness: 1
+})
+
+
+const eyelidsMaterial= new THREE.MeshStandardMaterial({
+    color: guiObjects.colorEyeLids,
+    roughness: 1
+})
+
+const beakMaterial= new THREE.MeshStandardMaterial({
+    color: guiObjects.colorBeak,
+    roughness: 1
+})
+
+const beakSkinMaterial= new THREE.MeshStandardMaterial({
+    color: guiObjects.colorBeakSkin,
+    roughness: 1
+})
+
+const eyesMaterial= new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    roughness: 0
+})
+
+const eyesXMaterial= new THREE.MeshStandardMaterial({
+    color: guiObjects.colorEyesX,
+    roughness: 0
+})
+
+//Hat
+const hat1Material= new THREE.MeshStandardMaterial({
+    color: guiObjects.colorHat1,
+    roughness: 0
+})
+
+const hat2Material= new THREE.MeshStandardMaterial({
+    color: guiObjects.colorHat2,
+    roughness: 0
+})
 
 
 /**
@@ -46,7 +158,47 @@ gltfloader.load(
     (gltf)=>
     {
         pigeonHead= gltf.scene
-       pigeonHead.scale.set(0.8, 0.8, 0.8)
+       pigeonHead.scale.multiplyScalar(0.6)
+       pigeonHead.rotation.set(-0.35, -0.45, -0.4)
+
+       // Change materials directly by name if they are named in the model
+       pigeonHead.traverse((child) => {
+        if (child.isMesh) {
+            if (child.material.name === 'Body') {
+                child.material = bodyMaterial; 
+            }
+            
+            if (child.material.name === 'eyebag') {
+                    child.material = eyelidsMaterial; 
+                }
+            
+            if (child.material.name === 'beak') {
+                    child.material = beakMaterial; 
+                }
+            
+            if (child.material.name === 'beakskin') {
+                    child.material = beakSkinMaterial; 
+                }
+
+            if (child.material.name === 'eyes') {
+                    child.material = eyesMaterial; 
+                }
+
+            if (child.material.name === 'eyesx') {
+                    child.material = eyesXMaterial; 
+                }
+
+            if (child.material.name === 'Hat1') {
+                    child.material = hat1Material; 
+                }
+
+            if (child.material.name === 'hat2') {
+                    child.material = hat2Material; 
+                }
+           
+        }
+    })
+
         scene.add(pigeonHead)
     }
 )
@@ -55,9 +207,10 @@ gltfloader.load(
 //     'GLTF/pigeonSkeleton.glb',
 //     (gltf)=>
 //     {
-//         
-// gltf.scene.scale.set(0.8, 0.8, 0.8)
-//         scene.add(gltf.scene)
+//         pigeonSkeleton =gltf.scene
+//         pigeonSkeleton.scale.multiplyScalar(0.6)
+//        pigeonSkeleton.rotation.set(-0.35, -0.45, -0.4)
+//         scene.add(pigeonSkeleton)
 //     }
 // )
 
