@@ -1,18 +1,72 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import GUI from 'lil-gui'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
+
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
 
+/**
+ * GUI
+ */
+const gui= new GUI()
+gui.close()
+// gui.addFolder('')
+
+const guiObjects= {}
+guiObjects.colorBG = 0xffd60a
+gui
+    .addColor(guiObjects, 'colorBG')
+    .onChange(() => {
+        // Update the scene background color properly
+        scene.background = new THREE.Color(guiObjects.colorBG);
+    })
+    .name('BG')
+
+
+
+
+
 // Scene
 const scene = new THREE.Scene()
+scene.background = new THREE.Color(guiObjects.colorBG)
+
 
 /**
- * Object
+ * Model
  */
-const geometry = new THREE.BoxGeometry(1, 1, 1)
-const material = new THREE.MeshBasicMaterial({ color: 0xff0000 })
-const mesh = new THREE.Mesh(geometry, material)
-scene.add(mesh)
+
+const gltfloader= new GLTFLoader()
+
+gltfloader.load(
+    'GLTF/pigeonHead.glb',
+    (gltf)=>
+    {
+        gltf.scene.scale.set(0.8, 0.8, 0.8)
+        scene.add(gltf.scene)
+    }
+)
+
+
+
+
+
+
+
+
+/**
+ * Lights
+ */
+
+const ambientLight= new THREE.AmbientLight(0xffffff, 1)
+scene.add(ambientLight)
+
+const directLight = new THREE.DirectionalLight(0xffffff, 2)
+directLight.position.set(1, 4, 3)
+scene.add(directLight)
+
+
+
 
 /**
  * Sizes
@@ -35,7 +89,11 @@ window.addEventListener('resize', () =>
         // Update renderer
         renderer.setSize(sizes.width, sizes.height)
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+        
     })
+
+
+
     
 
 /**
