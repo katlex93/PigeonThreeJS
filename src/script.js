@@ -288,6 +288,7 @@ window.addEventListener('resize', () =>
  */
 
 const mouse= new THREE.Vector2()
+const circleRadius = 0.5
 
 window.addEventListener('mousemove', (event)=>
 {
