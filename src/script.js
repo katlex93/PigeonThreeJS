@@ -96,7 +96,12 @@ gui
 const scene = new THREE.Scene()
 scene.background = new THREE.Color(guiObjects.colorBG)
 
-
+let uniforms = {
+    isXRay: {value: false},
+    rayAng: {value: 1},
+    rayOri: {value: new THREE.Vector3()},
+    rayDir: {value: new THREE.Vector3()}
+  }
 
 /**
  * Materials
@@ -105,13 +110,15 @@ scene.background = new THREE.Color(guiObjects.colorBG)
 //Bird's Body
 const bodyMaterial= new THREE.MeshStandardMaterial({
     color: guiObjects.colorBody,
-    roughness: 1
+    roughness: 1,
+    metal: 0,
 })
 
 
 const eyelidsMaterial= new THREE.MeshStandardMaterial({
     color: guiObjects.colorEyeLids,
-    roughness: 1
+    roughness: 1,
+    metal: 0,
 })
 
 const beakMaterial= new THREE.MeshStandardMaterial({
@@ -156,7 +163,7 @@ let pigeonHead= null
 let pigeonSkeleton = null
 
 gltfloader.load(
-    'GLTF/pigeonHead.glb',
+    'GLTF/pigeonWithBrain.glb',
     (gltf)=>
     {
         pigeonHead= gltf.scene
@@ -197,6 +204,60 @@ gltfloader.load(
             if (child.material.name === 'hat2') {
                     child.material = hat2Material; 
                 }
+
+                // child.material.envMap = reflectionCube;
+                child.material.transparent = true;
+                child.material.side = THREE.DoubleSide;                  
+                child.material.onBeforeCompile = shader => {
+                    shader.uniforms.isXRay = uniforms.isXRay;
+                    shader.uniforms.rayAng = uniforms.rayAng;
+                    shader.uniforms.rayOri = uniforms.rayOri;
+                    shader.uniforms.rayDir = uniforms.rayDir;
+                    shader.vertexShader = `
+                      uniform vec3 rayOri;
+                      varying vec3 vPos;
+                      varying float vXRay;
+                      ${shader.vertexShader}
+                    `.replace(
+                      `#include <begin_vertex>`,
+                      `#include <begin_vertex>
+                        vPos = (modelMatrix * vec4(position, 1.)).xyz;
+                        
+                        vec3 vNormal = normalize( normalMatrix * normal );
+                        vec3 vNormel = normalize( normalMatrix * normalize(rayOri - vPos) );
+                        vXRay = pow(1. - dot(vNormal, vNormel), 3. );
+                      `
+                    );
+                    console.log(shader.vertexShader);
+                    shader.fragmentShader = `
+                      uniform float isXRay;
+                      uniform float rayAng;
+                      uniform vec3 rayOri;
+                      uniform vec3 rayDir;
+                      
+                     varying vec3 vPos;
+                     varying float vXRay;
+                      ${shader.fragmentShader}
+                    `.replace(
+                      `#include <dithering_fragment>`,
+                      `#include <dithering_fragment>
+                      
+                      if(abs(isXRay) > 0.5){
+                      
+                        vec3 xrVec = vPos - rayOri;
+                        vec3 xrDir = normalize( xrVec );
+                        float angleCos = dot( xrDir, rayDir );
+            
+                        vec4 col = vec4(0, 1, 1, 1) * vXRay;
+                        col.a = 0.5;
+                        gl_FragColor = mix(gl_FragColor, col, smoothstep(rayAng - 0.02, rayAng, angleCos));
+            
+                      }
+                      
+                      `
+                    );
+                    console.log(shader.fragmentShader);
+                  } 
            
         }
     })
@@ -319,11 +380,47 @@ controls.enableDamping = true
  * Renderer
  */
 const renderer = new THREE.WebGLRenderer({
-    canvas: canvas
+    canvas: canvas,
+    // antialias: true,
+    // alpha: true,preserveDrawingBuffer: true , logarithmicDepthBuffer: false
 })
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
+
+
+
+renderer.domElement.addEventListener("pointerdown", event => {
+    //console.log(event);
+    //setXRay(event);
+    if (event.button == 0){
+      uniforms.isXRay.value = true;
+    }
+  });
+  renderer.domElement.addEventListener("pointerup", event => {
+    if (event.button == 0){
+      uniforms.isXRay.value = false;
+    }
+  })
+  renderer.domElement.addEventListener("pointermove", event => {
+  
+      setXRay(event);
+  
+  })
+  
+  renderer.setAnimationLoop((_) => {
+    renderer.render(scene, camera);
+  });
+  
+  function setXRay(event){
+    mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+      mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    if (pigeonHead && uniforms.isXRay.value){
+          uniforms.rayOri.value.copy(raycaster.ray.origin)
+          uniforms.rayDir.value.copy(raycaster.ray.direction);
+    }
+  }
 
 /**
  * Animate 
@@ -334,24 +431,29 @@ const tick = () =>
     {
        const elapsedTime= clock.getElapsedTime() 
 
+       if (uniforms.isXRay.value) {
+        raycaster.setFromCamera(mouse, camera);
+        uniforms.rayOri.value.copy(raycaster.ray.origin);
+        uniforms.rayDir.value.copy(raycaster.ray.direction);
+    }
        //Raycaster
-       raycaster.setFromCamera(mouse,camera)
+       //raycaster.setFromCamera(mouse,camera)
 
-       if (pigeonHead && pigeonSkeleton) {
-        // Check for intersections with the duck model
-        const intersects = raycaster.intersectObject(pigeonHead);
+    //    if (pigeonHead && pigeonSkeleton) {
+    //     // Check for intersections with the duck model
+    //     const intersects = raycaster.intersectObject(pigeonHead);
     
-        if (intersects.length) {
-          // Show skeleton when hovering over the duck
-         pigeonHead.visible=false
-          pigeonSkeleton.visible = true;
-          // Optionally highlight parts of the skeleton based on intersects
-        } else {
-          // Hide skeleton if not hovering over the duck
-          pigeonSkeleton.visible = false;
-          pigeonHead.visible=true
-        }
-      }
+    //     if (intersects.length) {
+    //       // Show skeleton when hovering over the duck
+    //      pigeonHead.visible=false
+    //       pigeonSkeleton.visible = true;
+    //       // Optionally highlight parts of the skeleton based on intersects
+    //     } else {
+    //       // Hide skeleton if not hovering over the duck
+    //       pigeonSkeleton.visible = false;
+    //       pigeonHead.visible=true
+    //     }
+    //   }
 
     
         // Update controls
