@@ -3,6 +3,90 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import GUI from 'lil-gui'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 
+
+// window.Ammo().then((AmmoLib) => {
+//     const collisionConfiguration = new AmmoLib.btDefaultCollisionConfiguration();
+//     const dispatcher = new AmmoLib.btCollisionDispatcher(collisionConfiguration);
+//     const overlappingPairCache = new AmmoLib.btDbvtBroadphase();
+//     const solver = new AmmoLib.btSequentialImpulseConstraintSolver();
+  
+//     // Initialize the physics world
+//     physicsWorld = new AmmoLib.btDiscreteDynamicsWorld(
+//       dispatcher,
+//       overlappingPairCache,
+//       solver,
+//       collisionConfiguration
+//     );
+  
+//     // Set gravity in the physics world
+//     physicsWorld.setGravity(new AmmoLib.btVector3(0, -9.82, 0)); // Downward gravity
+  
+//     // Create a transformation helper object
+//     transformAux1 = new AmmoLib.btTransform();
+  
+//     console.log('Physics World Initialized and Ready for Use');
+//   });
+
+window.Ammo().then((AmmoLib) => {
+    const collisionConfiguration = new AmmoLib.btSoftBodyRigidBodyCollisionConfiguration();
+    const dispatcher = new AmmoLib.btCollisionDispatcher(collisionConfiguration);
+    const overlappingPairCache = new AmmoLib.btDbvtBroadphase();
+    const solver = new AmmoLib.btSequentialImpulseConstraintSolver();
+    const softBodySolver = new AmmoLib.btDefaultSoftBodySolver();
+
+    //Create Physics world
+    physicsWorld = new AmmoLib.btSoftRigidDynamicsWorld(
+        dispatcher,
+        overlappingPairCache,
+        solver,
+        collisionConfiguration,
+        softBodySolver
+    )
+
+    //Gravity
+    physicsWorld.setGravity(new AmmoLib.btVector3(0, -9.82, 0))
+
+
+   
+  
+    const softBodyHelpers = new AmmoLib.btSoftBodyHelpers()
+
+    //rope sart and end
+    const ropeStart = new AmmoLib.btVector3(0, 5, 0 )
+    const ropeEnd = new AmmoLib.btVector3(0,3,0)
+
+    const rope = softBodyHelpers.CreateRope(
+        physicsWorld.getWorldInfo(),
+        ropeStart,
+        ropeEnd, 
+        10,
+        0
+
+    );
+
+
+ 
+    console.log(rope);
+  
+});
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
 // Canvas
 const canvas = document.querySelector('canvas.webgl')
 
@@ -15,142 +99,29 @@ gui.close()
 
 const guiObjects= {}
 guiObjects.colorBG = 0xffd60a
-guiObjects.colorBody = 0xBFC5FF
-guiObjects.colorEyeLids = 0xBFC5FF
-guiObjects.colorBeak = 0xE7970D
-guiObjects.colorBeakSkin = 0xFF3A26
-guiObjects.colorEyesX = 0x000000
-guiObjects.colorHat1 = 0x5D65FF
-guiObjects.colorHat2 = 0xFF3A26
-
-gui
-    .addColor(guiObjects, 'colorBG')
-    .onChange(() => {
-        // Update the scene background color properly
-        scene.background = new THREE.Color(guiObjects.colorBG);
-    })
-    .name('BG')
-
-
-    gui
-    .addColor(guiObjects, 'colorBody')
-    .onChange(() => {
-        
-        bodyMaterial.color.set(guiObjects.colorBody);
-    })
-    .name('Body')
-
-    gui
-    .addColor(guiObjects, 'colorEyeLids')
-    .onChange(() => {
-        
-        eyelidsMaterial.color.set(guiObjects.colorEyeLids);
-    })
-    .name('EyeLids')
-
-    gui
-    .addColor(guiObjects, 'colorBeak')
-    .onChange(() => {
-        
-        beakMaterial.color.set(guiObjects.colorBeak);
-    })
-    .name('Beak')
-
-    gui
-    .addColor(guiObjects, 'colorBeakSkin')
-    .onChange(() => {
-        
-        beakSkinMaterial.color.set(guiObjects.colorBeakSkin);
-    })
-    .name('Beak Skin')
-
-    gui
-    .addColor(guiObjects, 'colorEyesX')
-    .onChange(() => {
-        
-        eyesXMaterial.color.set(guiObjects.colorEyesX);
-    })
-    .name("Eye's X")
-
-    gui
-    .addColor(guiObjects, 'colorHat1')
-    .onChange(() => {
-        
-        hat1Material.color.set(guiObjects.colorHat1);
-    })
-    .name("Hat 1")
-
-    gui
-    .addColor(guiObjects, 'colorHat2')
-    .onChange(() => {
-        
-        hat2Material.color.set(guiObjects.colorHat2);
-    })
-    .name("Hat 2")
-
-
-
 
 
 // Scene
 const scene = new THREE.Scene()
 scene.background = new THREE.Color(guiObjects.colorBG)
 
-let uniforms = {
-    isXRay: {value: false},
-    rayAng: {value: 1},
-    rayOri: {value: new THREE.Vector3()},
-    rayDir: {value: new THREE.Vector3()}
-  }
 
 /**
- * Materials
+ * Physics with Ammo
  */
 
-//Bird's Body
-const bodyMaterial= new THREE.MeshStandardMaterial({
-    color: guiObjects.colorBody,
-    roughness: 1,
-    metal: 0,
-})
+let  physicsWorld;
+let rigidBodies = [];
+let transformAux1;
+
+//Setup
+// Ammo.js Initialization
 
 
-const eyelidsMaterial= new THREE.MeshStandardMaterial({
-    color: guiObjects.colorEyeLids,
-    roughness: 1,
-    metal: 0,
-})
+  
 
-const beakMaterial= new THREE.MeshStandardMaterial({
-    color: guiObjects.colorBeak,
-    roughness: 1
-})
 
-const beakSkinMaterial= new THREE.MeshStandardMaterial({
-    color: guiObjects.colorBeakSkin,
-    roughness: 1
-})
 
-const eyesMaterial= new THREE.MeshStandardMaterial({
-    color: 0xffffff,
-    roughness: 0
-})
-
-const eyesXMaterial= new THREE.MeshStandardMaterial({
-    color: guiObjects.colorEyesX,
-    roughness: 0
-})
-
-//Hat
-const hat1Material= new THREE.MeshStandardMaterial({
-    color: guiObjects.colorHat1,
-    roughness: 0
-})
-
-const hat2Material= new THREE.MeshStandardMaterial({
-    color: guiObjects.colorHat2,
-    roughness: 0
-})
 
 
 /**
@@ -167,129 +138,14 @@ gltfloader.load(
     (gltf)=>
     {
         pigeonHead= gltf.scene
-       pigeonHead.scale.multiplyScalar(0.6)
-       pigeonHead.rotation.set(-0.35, -0.45, -0.4)
-
-       // Change materials directly by name if they are named in the model
-       pigeonHead.traverse((child) => {
-        if (child.isMesh) {
-            if (child.material.name === 'Body') {
-                child.material = bodyMaterial; 
-            }
-            
-            if (child.material.name === 'eyebag') {
-                    child.material = eyelidsMaterial; 
-                }
-            
-            if (child.material.name === 'beak') {
-                    child.material = beakMaterial; 
-                }
-            
-            if (child.material.name === 'beakskin') {
-                    child.material = beakSkinMaterial; 
-                }
-
-            if (child.material.name === 'eyes') {
-                    child.material = eyesMaterial; 
-                }
-
-            if (child.material.name === 'eyesx') {
-                    child.material = eyesXMaterial; 
-                }
-
-            if (child.material.name === 'Hat1') {
-                    child.material = hat1Material; 
-                }
-
-            if (child.material.name === 'hat2') {
-                    child.material = hat2Material; 
-                }
-
-                // child.material.envMap = reflectionCube;
-                child.material.transparent = true;
-                child.material.side = THREE.DoubleSide;                  
-                child.material.onBeforeCompile = shader => {
-                    shader.uniforms.isXRay = uniforms.isXRay;
-                    shader.uniforms.rayAng = uniforms.rayAng;
-                    shader.uniforms.rayOri = uniforms.rayOri;
-                    shader.uniforms.rayDir = uniforms.rayDir;
-                    shader.vertexShader = `
-                      uniform vec3 rayOri;
-                      varying vec3 vPos;
-                      varying float vXRay;
-                      ${shader.vertexShader}
-                    `.replace(
-                      `#include <begin_vertex>`,
-                      `#include <begin_vertex>
-                        vPos = (modelMatrix * vec4(position, 1.)).xyz;
-                        
-                        vec3 vNormal = normalize( normalMatrix * normal );
-                        vec3 vNormel = normalize( normalMatrix * normalize(rayOri - vPos) );
-                        vXRay = pow(1. - dot(vNormal, vNormel), 3. );
-                      `
-                    );
-                    console.log(shader.vertexShader);
-                    shader.fragmentShader = `
-                      uniform float isXRay;
-                      uniform float rayAng;
-                      uniform vec3 rayOri;
-                      uniform vec3 rayDir;
-                      
-                     varying vec3 vPos;
-                     varying float vXRay;
-                      ${shader.fragmentShader}
-                    `.replace(
-                      `#include <dithering_fragment>`,
-                      `#include <dithering_fragment>
-                      
-                      if(abs(isXRay) > 0.5){
-                      
-                        vec3 xrVec = vPos - rayOri;
-                        vec3 xrDir = normalize( xrVec );
-                        float angleCos = dot( xrDir, rayDir );
-            
-                        vec4 col = vec4(0, 1, 1, 1) * vXRay;
-                        col.a = 0.5;
-                        gl_FragColor = mix(gl_FragColor, col, smoothstep(rayAng - 0.02, rayAng, angleCos));
-            
-                      }
-                      
-                      `
-                    );
-                    console.log(shader.fragmentShader);
-                  } 
-           
-        }
-    })
-
-        scene.add(pigeonHead)
-    }
-)
-
-gltfloader.load(
-    'GLTF/pigeonSkeleton.glb',
-    (gltf)=>
-    {
-       pigeonSkeleton =gltf.scene
-       pigeonSkeleton.scale.multiplyScalar(0.6)
-       pigeonSkeleton.rotation.set(-0.35, -0.45, -0.4)
-       pigeonSkeleton.visible=false
-
-       // Change materials directly by name if they are named in the model
-       pigeonSkeleton.traverse(
-        (child) => {
-        if (child.isMesh) {
-            if (child.material.name === 'beak') {
-                child.material = beakMaterial; 
-            }
-        }
-    })
+       pigeonHead.scale.multiplyScalar(0.4)
+      
        
-       scene.add(pigeonSkeleton)
+    
+    scene.add(pigeonHead)
+})
 
 
-    }
-)
 
 
 
@@ -390,37 +246,6 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
 
 
-renderer.domElement.addEventListener("pointerdown", event => {
-    //console.log(event);
-    //setXRay(event);
-    if (event.button == 0){
-      uniforms.isXRay.value = true;
-    }
-  });
-  renderer.domElement.addEventListener("pointerup", event => {
-    if (event.button == 0){
-      uniforms.isXRay.value = false;
-    }
-  })
-  renderer.domElement.addEventListener("pointermove", event => {
-  
-      setXRay(event);
-  
-  })
-  
-  renderer.setAnimationLoop((_) => {
-    renderer.render(scene, camera);
-  });
-  
-  function setXRay(event){
-    mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-      mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
-    raycaster.setFromCamera(mouse, camera);
-    if (pigeonHead && uniforms.isXRay.value){
-          uniforms.rayOri.value.copy(raycaster.ray.origin)
-          uniforms.rayDir.value.copy(raycaster.ray.direction);
-    }
-  }
 
 /**
  * Animate 
@@ -430,33 +255,9 @@ const clock = new THREE.Clock()
 const tick = () =>
     {
        const elapsedTime= clock.getElapsedTime() 
-
-       if (uniforms.isXRay.value) {
-        raycaster.setFromCamera(mouse, camera);
-        uniforms.rayOri.value.copy(raycaster.ray.origin);
-        uniforms.rayDir.value.copy(raycaster.ray.direction);
-    }
-       //Raycaster
-       //raycaster.setFromCamera(mouse,camera)
-
-    //    if (pigeonHead && pigeonSkeleton) {
-    //     // Check for intersections with the duck model
-    //     const intersects = raycaster.intersectObject(pigeonHead);
-    
-    //     if (intersects.length) {
-    //       // Show skeleton when hovering over the duck
-    //      pigeonHead.visible=false
-    //       pigeonSkeleton.visible = true;
-    //       // Optionally highlight parts of the skeleton based on intersects
-    //     } else {
-    //       // Hide skeleton if not hovering over the duck
-    //       pigeonSkeleton.visible = false;
-    //       pigeonHead.visible=true
-    //     }
-    //   }
-
-    
-        // Update controls
+       
+       
+       // Update controls
         controls.update()
 
         // Render
